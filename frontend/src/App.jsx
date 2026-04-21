@@ -11,6 +11,12 @@ const AppStyles = () => (
   <style>{`
     :root { font-size: 15px; }
 
+    /* FIX: FORCING TEXT VISIBILITY IN INPUTS AND SELECTS */
+    input, select, textarea, option {
+      color: #000000 !important; /* Force black text */
+      background-color: #ffffff !important; /* Force white background */
+    }
+
     /* EXACTLY 4 ON TOP, 4 ON BOTTOM */
     .category-grid {
       display: grid;
@@ -57,7 +63,6 @@ const AppStyles = () => (
       padding: 0 15px;
       border: 1px solid #cbd5e1; 
       border-radius: 8px; 
-      background-color: #ffffff;
       font-size: 0.95rem;
       transition: all 0.2s ease;
       box-sizing: border-box; 
@@ -190,7 +195,7 @@ const AppStyles = () => (
     }
 
     /* =========================================
-       FIXED FLOATING AI CHAT CSS
+        FIXED FLOATING AI CHAT CSS
        ========================================= */
     .chat-wrapper { position: fixed; bottom: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; }
     .chat-window { max-height: 420px; width: 340px; border-radius: 12px; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; margin-bottom: 15px; display: flex; flex-direction: column; overflow: hidden; }
@@ -201,7 +206,7 @@ const AppStyles = () => (
     .msg-bubble.ai { background: #f1f5f9; color: #1e293b; align-self: flex-start; }
     .msg-bubble.user { background: #3b82f6; color: white; align-self: flex-end; }
     .chat-input-area { padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; gap: 8px; }
-    .chat-input-area input { flex: 1; height: 36px; padding: 0 15px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 0.9rem; }
+    .chat-input-area input { flex: 1; height: 36px; padding: 0 15px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 0.9rem; color: #000000 !important; }
     .chat-input-area input:focus { border-color: #3b82f6; }
     .chat-input-area button { padding: 0 15px; height: 36px; font-size: 0.9rem; background: #3b82f6; color: white; border: none; border-radius: 20px; font-weight: 600; cursor: pointer; }
     .chat-toggle-btn { padding: 12px 25px; border-radius: 50px; background: #3b82f6; color: white; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
@@ -279,6 +284,26 @@ function App() {
     "Bca": ["General"], "Mca": ["General"], "bcom": ["General"],
     "ANM": ["General"], "GNM": ["General"], "Bsc Nursing": ["General"],
     "D pharma": ["General"], "b Pharma": ["General"], "LLB": ["General"]
+  };
+
+  // --- NEW LOGIC: DYNAMIC YEAR & SEMESTER FILTERING ---
+  const getAvailableYears = (courseName) => {
+    const name = courseName?.toLowerCase();
+    if (["btech", "bsc nursing", "b pharma", "llb"].includes(name)) {
+      return ["1st Year", "2nd Year", "3rd Year", "4th Year"];
+    }
+    if (["diploma", "bca", "bba", "bsc", "ba", "bcom"].includes(name)) {
+      return ["1st Year", "2nd Year", "3rd Year"];
+    }
+    return ["1st Year", "2nd Year"]; // MCA, MBA, MTech, D Pharma, ANM, GNM
+  };
+
+  const getAvailableSemesters = (yearName) => {
+    if (yearName === "1st Year") return ["1", "2"];
+    if (yearName === "2nd Year") return ["3", "4"];
+    if (yearName === "3rd Year") return ["5", "6"];
+    if (yearName === "4th Year") return ["7", "8"];
+    return [];
   };
 
   const fetchVerified = async () => {
@@ -401,7 +426,7 @@ function App() {
     setMessages(newMsgs);
     setChatInput('');
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: chatInput }] }] })
       });
@@ -552,14 +577,16 @@ function App() {
               </div>
               <div className="input-group">
                 <label>Year</label>
-                <select required value={year} onChange={(e) => setYear(e.target.value)} disabled={!browseStream}>
-                  <option value="">Select Year...</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option>
+                <select required value={year} onChange={(e) => {setYear(e.target.value); setSem('');}} disabled={!browseStream}>
+                  <option value="">Select Year...</option>
+                  {getAvailableYears(selectedCourse).map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
               <div className="input-group">
                 <label>Semester</label>
                 <select required value={sem} onChange={(e) => setSem(e.target.value)} disabled={!year}>
-                  <option value="">Select Sem...</option>{[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n.toString()}>Semester {n}</option>)}
+                  <option value="">Select Sem...</option>
+                  {getAvailableSemesters(year).map(s => <option key={s} value={s}>Semester {s}</option>)}
                 </select>
               </div>
             </div>
@@ -588,7 +615,7 @@ function App() {
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
               <button className="back-link" onClick={() => setView('browse')}>← Back</button>
               
-              {/* UPDATED: FILTER PILLS NOW INCLUDE 'IMP QUES' */}
+              {/* FIXED: 'Imp Ques' REORDERED TO APPEAR AFTER 'Notes' */}
               <div className="onoff-filter-group" style={{display: 'flex', gap: '0'}}>
                 <button className={`btn-filter-pill ${fileResultsFilter === 'all' ? 'active' : ''}`} onClick={() => setFileResultsFilter('all')}>All</button>
                 <button className={`btn-filter-pill ${fileResultsFilter === 'PYQ' ? 'active' : ''}`} onClick={() => setFileResultsFilter('PYQ')}>PYQs</button>
@@ -605,7 +632,7 @@ function App() {
                   <div className="doc-info">
                     <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                       <strong>{d.title}</strong>
-                      {d.docType && <span className={`doc-tag ${d.docType.toLowerCase()}`}>{d.docType}</span>}
+                      {d.docType && <span className={`doc-tag ${d.docType.toLowerCase().replace(/\s/g, '')}`}>{d.docType}</span>}
                     </div>
                     <p>{d.subject}</p>
                   </div>
@@ -626,7 +653,7 @@ function App() {
             <div className="form-stack">
               <div className="input-group">
                 <label>Department</label>
-                <select required onChange={(e) => {setDept(e.target.value); setCourse(''); setStream('');}}>
+                <select required onChange={(e) => {setDept(e.target.value); setCourse(''); setStream(''); setYear(''); setSem('');}}>
                   <option value="">Select...</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.id}</option>)}
                 </select>
@@ -634,7 +661,7 @@ function App() {
               <div className="row-group">
                 <div className="input-group">
                   <label>Course</label>
-                  <select required onChange={(e) => {setCourse(e.target.value); setStream('');}} disabled={!dept}>
+                  <select required onChange={(e) => {setCourse(e.target.value); setStream(''); setYear(''); setSem('');}} disabled={!dept}>
                     <option value="">Select Course...</option>
                     {dept && departmentCourseData[dept] && departmentCourseData[dept].map(c => <option key={c} value={c}>{formatCourseName(c)}</option>)}
                   </select>
@@ -648,8 +675,20 @@ function App() {
                 </div>
               </div>
               <div className="row-group">
-                <div className="input-group"><label>Year</label><select required onChange={(e) => setYear(e.target.value)}><option value="">Year...</option><option value="1st Year">1st</option><option value="2nd Year">2nd</option><option value="3rd Year">3rd</option></select></div>
-                <div className="input-group"><label>Semester</label><select required onChange={(e) => setSem(e.target.value)}><option value="">Sem...</option>{[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n.toString()}>{n}</option>)}</select></div>
+                <div className="input-group">
+                  <label>Year</label>
+                  <select required disabled={!course} onChange={(e) => {setYear(e.target.value); setSem('');}}>
+                    <option value="">Year...</option>
+                    {getAvailableYears(course).map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Semester</label>
+                  <select required disabled={!year} onChange={(e) => setSem(e.target.value)}>
+                    <option value="">Sem...</option>
+                    {getAvailableSemesters(year).map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
               
               <input type="text" placeholder="Subject Name" required onChange={(e) => setSubject(e.target.value)} />
@@ -661,7 +700,6 @@ function App() {
                   <option value="">Select...</option>
                   <option value="PYQ">Previous Year Question (PYQ)</option>
                   <option value="Notes">Study Notes</option>
-                  {/* UPDATED: UPLOAD OPTION NOW INCLUDES 'IMP QUES' */}
                   <option value="Imp Ques">Important Questions (Imp Ques)</option>
                 </select>
               </div>
@@ -669,11 +707,11 @@ function App() {
               <div className="file-input-wrapper">
                 <label>Select Document (PDF/Image)</label>
                 <input type="file" required className="modern-file-input" onChange={(e) => setSelectedFile(e.target.files[0])} />
-                <p className="file-info">{selectedFile ? `Selected: ${selectedFile.name}` : "No file chosen"}</p>
+                <p className="file-info" style={{color: '#000000'}}>{selectedFile ? `Selected: ${selectedFile.name}` : "No file chosen"}</p>
               </div>
             </div>
             <div className="form-actions" style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
-              <button className="btn-cancel" style={{padding: '12px 20px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: '500', cursor: 'pointer'}} onClick={() => setView('home')}>Cancel</button>
+              <button className="btn-cancel" style={{padding: '12px 20px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: '500', cursor: 'pointer', color: '#000'}} onClick={() => setView('home')}>Cancel</button>
               <button className="btn-submit-large" onClick={handleUpload} disabled={uploading}>
                 {uploading ? "Uploading to Cloud..." : "Send for Approval"}
               </button>
@@ -692,7 +730,7 @@ function App() {
               <div key={d.id} className="admin-row" style={{background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #e2e8f0'}}>
                 <div className="admin-info">
                   <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
-                    <strong style={{fontSize: '1.1rem'}}>{d.title}</strong>
+                    <strong style={{fontSize: '1.1rem', color: '#000'}}>{d.title}</strong>
                     {d.docType && <span style={{background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem'}}>{d.docType}</span>}
                   </div>
                   <span style={{color: '#64748b', fontSize: '0.9rem'}}>{d.course && formatCourseName(d.course)} | {d.stream} | Sem {d.sem}</span>
