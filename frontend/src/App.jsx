@@ -17,6 +17,20 @@ const AppStyles = () => (
       background-color: #ffffff !important; /* Force white background */
     }
 
+    /* FIX: MAKING HEADINGS DARK AND VISIBLE */
+    .hero-text h2, .portal-title {
+      color: #111827 !important; /* Pure Dark/Black for high visibility */
+      font-weight: 800 !important;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .hero-text p {
+      color: #333333 !important; /* Dark Grey/Black for subheadings */
+      font-weight: 600 !important;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
     /* EXACTLY 4 ON TOP, 4 ON BOTTOM */
     .category-grid {
       display: grid;
@@ -67,6 +81,7 @@ const AppStyles = () => (
       transition: all 0.2s ease;
       box-sizing: border-box; 
       margin-bottom: 5px; 
+      color: #000000 !important; /* Fix color */
     }
 
     .form-stack input[type="text"]:focus, 
@@ -137,8 +152,22 @@ const AppStyles = () => (
     }
     .btn-browse-course:hover { background: #2563eb; }
 
-    /* Beautified Filter Toggles */
-    .onoff-filter-group { background: #f1f5f9; padding: 4px; border-radius: 50px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+    /* FIX: Beautified Filter Toggles (Horizontal Scroll for Mobile) */
+    .onoff-filter-group { 
+      background: #f1f5f9; 
+      padding: 4px; 
+      border-radius: 50px; 
+      display: flex; 
+      flex-wrap: nowrap; /* Forces one line */
+      overflow-x: auto;  /* Enables swiping */
+      white-space: nowrap; 
+      gap: 4px; 
+      /* Hides the scrollbar for a cleaner look */
+      -ms-overflow-style: none; 
+      scrollbar-width: none; 
+    }
+    .onoff-filter-group::-webkit-scrollbar { display: none; }
+
     .btn-filter-pill {
       background: transparent; border: none; border-radius: 50px; padding: 6px 18px;
       font-size: 0.85rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.2s ease;
@@ -184,13 +213,13 @@ const AppStyles = () => (
     .faq-card h4 { color: #0f172a; margin-bottom: 12px; font-size: 1.1rem; font-weight: 700; }
     .faq-card p { color: #475569; font-size: 0.95rem; line-height: 1.6; margin: 0; }
 
-    /* Footer Styling */
+    /* FIX: Footer Styling */
     .home-footer {
       text-align: center;
       padding: 30px 20px 20px;
-      color: #94a3b8;
-      font-size: 0.95rem;
-      font-weight: 500;
+      color: #000000; /* Made it Pitch Black */
+      font-size: 1rem;
+      font-weight: 700; /* Made it bold */
       margin-top: auto;
     }
 
@@ -487,7 +516,7 @@ function App() {
             {departments.map(d => (
               <div key={d.id} className="cat-card" style={{ backgroundColor: d.color }} onClick={() => { setSelectedCat(d.id); setView('courses_by_dept'); }}>
                 <span className="cat-icon">{d.icon}</span>
-                <h3 style={{fontSize: '1.1rem', margin: '10px 0 5px 0', color: '#1e293b'}}>{d.id}</h3>
+                <h3 style={{fontSize: '1.1rem', margin: '10px 0 5px 0', color: '#1e293b', fontWeight: 'bold'}}>{d.id}</h3>
                 <p style={{margin: 0, color: '#64748b', fontSize: '0.9rem'}}>Browse Courses</p>
               </div>
             ))}
@@ -499,7 +528,7 @@ function App() {
 
           {/* FAQ SECTION */}
           <div className="faq-section">
-            <h3 style={{ textAlign: 'center', marginBottom: '30px', color: '#1e293b', fontSize: '1.5rem' }}>About NSUarchive</h3>
+            <h3 style={{ textAlign: 'center', marginBottom: '30px', color: '#1e293b', fontSize: '1.5rem', fontWeight: '800' }}>About NSUarchive</h3>
             <div className="faq-grid">
               
               <div className="faq-card">
@@ -615,8 +644,8 @@ function App() {
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
               <button className="back-link" onClick={() => setView('browse')}>← Back</button>
               
-              {/* FIXED: 'Imp Ques' REORDERED TO APPEAR AFTER 'Notes' */}
-              <div className="onoff-filter-group" style={{display: 'flex', gap: '0'}}>
+              {/* FIX: Filter group wrapper changed to allow scrolling */}
+              <div className="onoff-filter-group">
                 <button className={`btn-filter-pill ${fileResultsFilter === 'all' ? 'active' : ''}`} onClick={() => setFileResultsFilter('all')}>All</button>
                 <button className={`btn-filter-pill ${fileResultsFilter === 'PYQ' ? 'active' : ''}`} onClick={() => setFileResultsFilter('PYQ')}>PYQs</button>
                 <button className={`btn-filter-pill ${fileResultsFilter === 'Notes' ? 'active' : ''}`} onClick={() => setFileResultsFilter('Notes')}>Notes</button>

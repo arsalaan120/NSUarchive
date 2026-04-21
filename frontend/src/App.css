@@ -19,7 +19,24 @@ body { margin: 0; background: var(--bg); font-family: 'Inter', sans-serif; color
 .input-group { display: flex; flex-direction: column; gap: 6px; text-align: left; flex: 1; }
 .input-group label { font-weight: 600; font-size: 14px; color: #475569; }
 
-input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 15px; background: #fff; width: 100%; box-sizing: border-box; }
+/* FIX: Ensure Inputs always have black text */
+input, select { 
+  padding: 12px; 
+  border: 1px solid #e2e8f0; 
+  border-radius: 8px; 
+  font-size: 15px; 
+  background: #fff; 
+  width: 100%; 
+  box-sizing: border-box; 
+  color: #000000 !important; 
+}
+
+/* FIX: Headings backup to ensure they are dark */
+.portal-title, .hero-text h2 {
+  color: #111827 !important;
+  font-weight: 800;
+  text-align: center;
+}
 
 /* File Picker Styling */
 .file-input-wrapper { background: #f1f5f9; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1; margin-top: 10px; }
@@ -28,7 +45,7 @@ input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; fo
 /* Buttons */
 .btn-main-upload { background: var(--primary); color: white; border: none; padding: 14px 30px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
 .btn-submit-large { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; flex: 2; cursor: pointer; }
-.btn-cancel { background: #f1f5f9; border: none; padding: 15px; border-radius: 10px; flex: 1; cursor: pointer; font-weight: 600; }
+.btn-cancel { background: #f1f5f9; border: none; padding: 15px; border-radius: 10px; flex: 1; cursor: pointer; font-weight: 600; color: #000; }
 .form-actions { display: flex; gap: 10px; margin-top: 25px; }
 
 /* List Styles */
@@ -37,6 +54,7 @@ input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; fo
 .btn-approve { background: #10b981; margin-right: 5px; }
 .btn-delete { background: #ef4444; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; }
 .back-link { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+
 /* ========================================= */
 /* FLOATING AI CHATBOT STYLES (THE FIX)      */
 /* ========================================= */
@@ -64,7 +82,6 @@ input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; fo
   border: 1px solid #e2e8f0;
 }
 
-/* This is the magic class that opens the chat */
 .chat-wrapper.open .chat-window {
   display: flex; 
 }
@@ -134,6 +151,8 @@ input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; fo
   border-radius: 20px;
   outline: none;
   font-size: 14px;
+  color: #000000 !important; /* FIX: Chat Text Color */
+  background-color: #ffffff !important;
 }
 
 .chat-input-area input:focus {
@@ -167,6 +186,7 @@ input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; fo
 .chat-toggle-btn:hover {
   transform: scale(1.05);
 }
+
 /* ========================================= */
 /* INSTAGRAM-STYLE LOGIN SCREEN              */
 /* ========================================= */
@@ -212,7 +232,7 @@ input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; fo
   width: 100%;
   background-color: #121212;
   border: 1px solid #363636;
-  color: #ffffff;
+  color: #ffffff !important; /* Keep login input text white for contrast on dark background */
   padding: 16px;
   border-radius: 12px;
   font-size: 14px;
