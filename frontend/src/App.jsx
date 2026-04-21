@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { db, auth } from './firebase'; 
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 
 // =========================================
 // --- DEMO-READY MODERN AESTHETIC CSS ---
@@ -254,6 +254,10 @@ function App() {
   const [authMode, setAuthMode] = useState('login'); 
   const [authError, setAuthError] = useState('');
 
+  // --- NEW: FORGOT PASSWORD STATES ---
+  const [forgotStep, setForgotStep] = useState(0); 
+  const [resetEmail, setResetEmail] = useState('');
+
   // --- FORM STATES ---
   const [dept, setDept] = useState('');
   const [course, setCourse] = useState(''); 
@@ -391,6 +395,25 @@ function App() {
     }
   };
 
+  // --- REAL FIREBASE PASSWORD RESET LOGIC ---
+  const handleRealPasswordReset = async () => {
+    setAuthError('');
+    if (!resetEmail) return setAuthError("Please enter your registered email.");
+
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setForgotStep(2); // Move to the success message screen
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        setAuthError("You don't have an existing account with this email.");
+      } else if (error.code === 'auth/invalid-email') {
+        setAuthError("Please enter a valid email format.");
+      } else {
+        setAuthError("Error: " + error.message);
+      }
+    }
+  };
+
   const handleLogout = () => {
     signOut(auth); setView('home'); 
   };
@@ -472,18 +495,55 @@ function App() {
         <div className="auth-main-wrapper">
           <div className="auth-brand-logo">🎓 NSU<span>archive</span></div>
           {authError && <div className="auth-error-msg">{authError}</div>}
-          <form onSubmit={handleAuth} className="auth-form">
-            <input type="email" className="auth-input-dark" placeholder="Email address" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required />
-            <input type="password" className="auth-input-dark" placeholder="Password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required />
-            <button type="submit" className="btn-login-blue">{authMode === 'login' ? 'Log in' : 'Sign up'}</button>
-          </form>
-          {authMode === 'login' && <div className="forgot-text">Forgotten password?</div>}
+          
+          {/* DEFAULT LOGIN/REGISTER */}
+          {forgotStep === 0 && (
+            <>
+              <form onSubmit={handleAuth} className="auth-form">
+                <input type="email" className="auth-input-dark" placeholder="Email address" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required />
+                <input type="password" className="auth-input-dark" placeholder="Password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required />
+                <button type="submit" className="btn-login-blue">{authMode === 'login' ? 'Log in' : 'Sign up'}</button>
+              </form>
+              {authMode === 'login' && <div className="forgot-text" onClick={() => {setForgotStep(1); setAuthError('');}}>Forgotten password?</div>}
+            </>
+          )}
+
+          {/* STEP 1: ENTER EMAIL FOR RESET */}
+          {forgotStep === 1 && (
+            <div className="auth-form">
+              <p style={{textAlign: 'center', color: '#fff', margin: '0 0 5px 0', fontSize: '1.2rem', fontWeight: 'bold'}}>Reset Password</p>
+              <p style={{textAlign: 'center', color: '#aaa', fontSize: '13px', margin: '0 0 15px 0'}}>Enter your registered email address.</p>
+              
+              <input type="email" className="auth-input-dark" placeholder="Registered email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+              <button className="btn-login-blue" onClick={handleRealPasswordReset}>Send Reset Link</button>
+              <div className="forgot-text" onClick={() => {setForgotStep(0); setAuthError('');}}>Cancel</div>
+            </div>
+          )}
+
+          {/* STEP 2: SUCCESS MESSAGE (FIREBASE SENDS A LINK) */}
+          {forgotStep === 2 && (
+            <div className="auth-form">
+              <p style={{textAlign: 'center', color: '#fff', margin: '0 0 5px 0', fontSize: '1.2rem', fontWeight: 'bold'}}>Check Your Email</p>
+              <div style={{background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', padding: '15px', borderRadius: '8px', margin: '15px 0'}}>
+                <p style={{textAlign: 'center', color: '#10b981', fontSize: '14px', margin: '0 0 10px 0', fontWeight: 'bold'}}>
+                  Success!
+                </p>
+                <p style={{textAlign: 'center', color: '#fff', fontSize: '13px', margin: '0', lineHeight: '1.5'}}>
+                  A secure password reset link has been sent to <strong>{resetEmail}</strong>. Click the link in that email to create your new password, then come back here to log in.
+                </p>
+              </div>
+              <button className="btn-login-blue" onClick={() => {setForgotStep(0); setResetEmail('');}}>Back to Login</button>
+            </div>
+          )}
+          
         </div>
-        <div className="auth-footer">
-          <button className="btn-create-account" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}>
-            {authMode === 'login' ? 'Create new account' : 'Back to Log in'}
-          </button>
-        </div>
+        {forgotStep === 0 && (
+          <div className="auth-footer">
+            <button className="btn-create-account" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}>
+              {authMode === 'login' ? 'Create new account' : 'Back to Log in'}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
