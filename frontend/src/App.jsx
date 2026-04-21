@@ -478,13 +478,22 @@ function App() {
     setMessages(newMsgs);
     setChatInput('');
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: chatInput }] }] })
       });
       const data = await res.json();
-      setMessages([...newMsgs, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
-    } catch (e) { console.error(e); }
+      
+      if (data.candidates && data.candidates.length > 0) {
+        setMessages([...newMsgs, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
+      } else {
+        console.error("API Error from Google:", data);
+        setMessages([...newMsgs, { role: 'ai', text: "Sorry, I am currently unavailable. Please try again later." }]);
+      }
+    } catch (e) { 
+      console.error(e);
+      setMessages([...newMsgs, { role: 'ai', text: "Network error occurred." }]);
+    }
   };
 
   // =========================================
@@ -704,7 +713,6 @@ function App() {
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
               <button className="back-link" onClick={() => setView('browse')}>← Back</button>
               
-              {/* FIX: Filter group wrapper changed to allow scrolling */}
               <div className="onoff-filter-group">
                 <button className={`btn-filter-pill ${fileResultsFilter === 'all' ? 'active' : ''}`} onClick={() => setFileResultsFilter('all')}>All</button>
                 <button className={`btn-filter-pill ${fileResultsFilter === 'PYQ' ? 'active' : ''}`} onClick={() => setFileResultsFilter('PYQ')}>PYQs</button>
