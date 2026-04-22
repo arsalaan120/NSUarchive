@@ -281,7 +281,7 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState([{ role: 'ai', text: 'Hi! I am the NSU Archive Assistant. How can I help you with your studies?' }]);
-  const API_KEY = "AIzaSyBZD_ADMo2ab8Jh4AGTqC1SGNzhEN4KeIE";
+  const API_KEY = "AIzaSyBEBDR5yQYp6sR0lLvXdbUaPtogLXaSmW4";
 
   // --- DATA STRUCTURES ---
   const departments = [
@@ -486,6 +486,8 @@ function App() {
       
       if (data.candidates && data.candidates.length > 0) {
         setMessages([...newMsgs, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
+      } else if (res.status === 429) {
+        setMessages([...newMsgs, { role: 'ai', text: "I'm receiving too many requests right now. Please try again in a few minutes! 🙏" }]);
       } else {
         console.error("API Error from Google:", data);
         setMessages([...newMsgs, { role: 'ai', text: "Sorry, I am currently unavailable. Please try again later." }]);
