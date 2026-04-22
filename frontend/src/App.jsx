@@ -281,7 +281,7 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState([{ role: 'ai', text: 'Hi! I am the NSU Archive Assistant. How can I help you with your studies?' }]);
-  const API_KEY = "AIzaSyBEBDR5yQYp6sR0lLvXdbUaPtogLXaSmW4";
+  const API_KEY = "AIzaSyBZD_ADMo2ab8Jh4AGTqC1SGNzhEN4KeIE";
 
   // --- DATA STRUCTURES ---
   const departments = [
