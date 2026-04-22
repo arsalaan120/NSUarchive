@@ -224,9 +224,9 @@ const AppStyles = () => (
     }
 
     /* =========================================
-        INSTAGRAM STYLE PROFILE CSS
+        INSTAGRAM STYLE PROFILE CSS (UPDATED FOR FULL SCREEN)
        ========================================= */
-    .ig-profile-container { background: #fff; border-radius: 12px; padding: 10px 0; }
+    .ig-profile-container { background: transparent; padding: 10px 0; width: 100%; }
     .ig-header-bar { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: space-between; padding: 0 15px 15px; border-bottom: 1px solid #e2e8f0; margin-bottom: 15px; color: #000;}
     
     .ig-top-row { display: flex; align-items: center; padding: 0 15px; gap: 25px; margin-bottom: 15px;}
@@ -259,9 +259,42 @@ const AppStyles = () => (
     .type-imp { background: #fef3c7; color: #b45309; }
 
     /* =========================================
+        NEW: APP NAVIGATION & SIDEBAR CSS
+       ========================================= */
+    .app-container { padding-bottom: 80px; } /* Prevent content from hiding behind bottom nav */
+    
+    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; align-items: center; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 1000; box-shadow: 0 -4px 10px rgba(0,0,0,0.03); }
+    .bottom-nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: none; border: none; color: #64748b; font-size: 0.75rem; font-weight: 600; cursor: pointer; gap: 4px; flex: 1;}
+    .bottom-nav-item.active { color: #3b82f6; }
+    .bottom-nav-icon { font-size: 1.4rem; }
+
+    .sidebar { position: fixed; top: 0; right: -300px; width: 260px; height: 100vh; background: #ffffff; box-shadow: -4px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 1002; display: flex; flex-direction: column; }
+    .sidebar.open { right: 0; }
+    .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.4); z-index: 1001; opacity: 0; visibility: hidden; transition: all 0.3s ease;}
+    .sidebar-overlay.show { opacity: 1; visibility: visible; }
+    .sidebar-header { padding: 20px; font-size: 1.2rem; font-weight: 800; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; color: #0f172a;}
+    .sidebar-header button { background: none; border: none; font-size: 2rem; cursor: pointer; color: #64748b; line-height: 1;}
+    .sidebar-links { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+    .sidebar-links button { padding: 12px 15px; text-align: left; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; font-weight: 600; color: #0f172a; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s;}
+    .sidebar-links button:hover { background: #f1f5f9; }
+
+    /* SEARCH PAGE CSS */
+    .search-box { display: flex; gap: 10px; margin-bottom: 25px; }
+    .search-box input { flex: 1; padding: 12px 15px; border: 2px solid #cbd5e1; border-radius: 12px; font-size: 1rem; color: #000; outline: none; transition: border-color 0.2s;}
+    .search-box input:focus { border-color: #3b82f6; }
+    .search-box button { padding: 0 20px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; }
+    
+    .user-result-card { display: flex; align-items: center; padding: 15px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; cursor: pointer; gap: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s;}
+    .user-result-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
+    .user-result-avatar { width: 55px; height: 55px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; overflow: hidden; flex-shrink: 0; border: 1px solid #cbd5e1;}
+    .user-result-info { flex: 1; }
+    .user-result-info strong { display: block; color: #0f172a; font-size: 1.05rem; margin-bottom: 2px;}
+    .user-result-info span { color: #64748b; font-size: 0.9rem; }
+
+    /* =========================================
         FIXED FLOATING AI CHAT CSS
        ========================================= */
-    .chat-wrapper { position: fixed; bottom: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; }
+    .chat-wrapper { position: fixed; bottom: 90px; right: 20px; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; }
     .chat-window { max-height: 420px; width: 340px; border-radius: 12px; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; margin-bottom: 15px; display: flex; flex-direction: column; overflow: hidden; }
     .chat-header { background: #3b82f6; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
     .chat-header button { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; line-height: 1; }
@@ -292,6 +325,13 @@ function App() {
   // --- NEW: FORGOT PASSWORD STATES ---
   const [forgotStep, setForgotStep] = useState(0); 
   const [resetEmail, setResetEmail] = useState('');
+
+  // --- NEW: SIDEBAR & SEARCH STATES ---
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [viewedUser, setViewedUser] = useState(null);
+  const [viewedUserUploads, setViewedUserUploads] = useState([]);
 
   // --- PROFILE STATES ---
   const [myUploads, setMyUploads] = useState([]);
@@ -417,6 +457,7 @@ function App() {
       setUserProfile({ college: '', year: '', avatarUrl: '', ...docSnap.data() }); 
     } else {
       const newProfile = { 
+        uid: currentUser.uid, // Ensure UID is stored for searching
         username: `student_${currentUser.uid.slice(0,5)}`, 
         displayName: '', 
         bio: '', 
@@ -438,6 +479,41 @@ function App() {
     setMyUploads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   };
 
+  // --- NEW: SEARCH LOGIC ---
+  const handleSearchUsers = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    const querySnapshot = await getDocs(collection(db, "users"));
+    const results = [];
+    const searchLower = searchQuery.toLowerCase();
+    
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      // Don't show the logged-in user in their own search results
+      if (docSnap.id === user.uid) return; 
+      
+      const uName = (data.username || '').toLowerCase();
+      const dName = (data.displayName || '').toLowerCase();
+      
+      // Partial match logic
+      if (uName.includes(searchLower) || dName.includes(searchLower)) {
+        results.push({ id: docSnap.id, ...data });
+      }
+    });
+    setSearchResults(results);
+  };
+
+  const handleViewUser = async (selectedUser) => {
+    setViewedUser(selectedUser);
+    // Fetch this specific user's uploads
+    const q = query(collection(db, "materials"), where("uploaderId", "==", selectedUser.id), where("status", "==", "verified"));
+    const snap = await getDocs(q);
+    setViewedUserUploads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setProfileTab('All'); // Reset tab
+    setView('view_user_profile');
+  };
+
   // --- USE-EFFECT ---
   useEffect(() => { 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -451,7 +527,7 @@ function App() {
     }
     
     if (view === 'admin') fetchPending();
-    if (view === 'profile') fetchMyUploads();
+    if (view === 'dashboard') fetchMyUploads();
 
     return () => unsubscribe();
   }, [selectedCat, selectedCourse, browseStream, year, sem, view, user]);
@@ -461,7 +537,6 @@ function App() {
     setUsernameError('');
     setSavingProfile(true);
     
-    // Check if username is already taken by someone else
     const q = query(collection(db, "users"), where("username", "==", userProfile.username));
     const snap = await getDocs(q);
     const isTaken = snap.docs.some(d => d.id !== user.uid);
@@ -474,12 +549,11 @@ function App() {
 
     let finalAvatarUrl = userProfile.avatarUrl;
 
-    // UPLOAD NEW PROFILE PICTURE IF SELECTED
     if (avatarFile) {
       try {
         const formData = new FormData();
         formData.append("file", avatarFile);
-        formData.append("upload_preset", "ml_default"); // Uses your existing Cloudinary preset
+        formData.append("upload_preset", "ml_default"); 
 
         const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/ddqotov4h/upload`, {
           method: "POST", body: formData,
@@ -495,7 +569,7 @@ function App() {
       }
     }
     
-    const finalProfileToSave = { ...userProfile, avatarUrl: finalAvatarUrl };
+    const finalProfileToSave = { ...userProfile, avatarUrl: finalAvatarUrl, uid: user.uid };
     
     await setDoc(doc(db, "users", user.uid), finalProfileToSave);
     
@@ -525,14 +599,13 @@ function App() {
     }
   };
 
-  // --- REAL FIREBASE PASSWORD RESET LOGIC ---
   const handleRealPasswordReset = async () => {
     setAuthError('');
     if (!resetEmail) return setAuthError("Please enter your registered email.");
 
     try {
       await sendPasswordResetEmail(auth, resetEmail);
-      setForgotStep(2); // Move to the success message screen
+      setForgotStep(2); 
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
         setAuthError("You don't have an existing account with this email.");
@@ -548,7 +621,6 @@ function App() {
     signOut(auth); setView('home'); 
   };
 
-  // --- UPLOAD LOGIC ---
   const handleUpload = async () => {
     if (!selectedFile || !title || !dept || !course || !stream || !year || !sem || !docType) {
       return alert("Please fill ALL fields and select a file!");
@@ -585,7 +657,6 @@ function App() {
     setUploading(false);
   };
 
-  // --- ADMIN LOGIC ---
   const handleAdminLogin = () => {
     if (adminPasscode === 'NSU2026') { setView('admin'); setAdminPasscode(''); } 
     else { alert("Incorrect Passcode!"); }
@@ -601,7 +672,6 @@ function App() {
     fetchPending();
   };
 
-  // --- AI CHAT LOGIC ---
   const handleAI = async (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -627,6 +697,19 @@ function App() {
       console.error(e);
       setMessages([...newMsgs, { role: 'ai', text: "Network error occurred." }]);
     }
+  };
+
+  // FILTER LOGIC FOR UPLOADS
+  const getProfileFilteredUploads = (sourceArray = myUploads) => {
+    if(profileTab === 'All') return sourceArray;
+    return sourceArray.filter(d => d.docType === profileTab);
+  };
+
+  const getDocTypeClass = (type) => {
+    if(type === 'PYQ') return 'type-pyq';
+    if(type === 'Notes') return 'type-notes';
+    if(type === 'Imp Ques') return 'type-imp';
+    return '';
   };
 
   // =========================================
@@ -662,14 +745,12 @@ function App() {
             </div>
           )}
 
-          {/* STEP 2: SUCCESS MESSAGE (FIREBASE SENDS A LINK) */}
+          {/* STEP 2: SUCCESS MESSAGE */}
           {forgotStep === 2 && (
             <div className="auth-form">
               <p style={{textAlign: 'center', color: '#fff', margin: '0 0 5px 0', fontSize: '1.2rem', fontWeight: 'bold'}}>Check Your Email</p>
               <div style={{background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', padding: '15px', borderRadius: '8px', margin: '15px 0'}}>
-                <p style={{textAlign: 'center', color: '#10b981', fontSize: '14px', margin: '0 0 10px 0', fontWeight: 'bold'}}>
-                  Success!
-                </p>
+                <p style={{textAlign: 'center', color: '#10b981', fontSize: '14px', margin: '0 0 10px 0', fontWeight: 'bold'}}>Success!</p>
                 <p style={{textAlign: 'center', color: '#fff', fontSize: '13px', margin: '0', lineHeight: '1.5'}}>
                   A secure password reset link has been sent to <strong>{resetEmail}</strong>. Click the link in that email to create your new password, then come back here to log in.
                 </p>
@@ -677,7 +758,6 @@ function App() {
               <button className="btn-login-blue" onClick={() => {setForgotStep(0); setResetEmail('');}}>Back to Login</button>
             </div>
           )}
-          
         </div>
         {forgotStep === 0 && (
           <div className="auth-footer">
@@ -690,33 +770,15 @@ function App() {
     );
   }
 
-  const formatCourseName = (c) => c.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  const getFilteredDocs = () => fileResultsFilter === 'all' ? docs : docs.filter(d => d.docType === fileResultsFilter);
-
-  // Filter Profile Uploads based on Tab
-  const getProfileFilteredUploads = () => {
-    if(profileTab === 'All') return myUploads;
-    return myUploads.filter(d => d.docType === profileTab);
-  };
-
-  const getDocTypeClass = (type) => {
-    if(type === 'PYQ') return 'type-pyq';
-    if(type === 'Notes') return 'type-notes';
-    if(type === 'Imp Ques') return 'type-imp';
-    return '';
-  };
-
   // =========================================
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppStyles />
 
-      <header className="main-header">
-        <div className="logo" onClick={() => {setView('home'); setSelectedCat(''); setSelectedCourse(''); setBrowseStream(''); setYear(''); setSem('');}}>🎓 NSU<span>archive</span></div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <button className="back-link" onClick={() => setView('profile')} style={{ border: 'none', background: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: 'bold' }}>👤 Profile</button>
-          <button className="back-link" onClick={handleLogout} style={{ border: 'none', background: 'none', color: '#64748b', cursor: 'pointer' }}>Logout</button>
-          <button className="btn-admin-nav" onClick={() => setView('admin_login')}>Admin Portal</button>
+      {/* HEADER: Simplified to just show Logo */}
+      <header className="main-header" style={{justifyContent: 'center'}}>
+        <div className="logo" onClick={() => {setView('home'); setSelectedCat(''); setSelectedCourse(''); setBrowseStream(''); setYear(''); setSem('');}}>
+          🎓 NSU<span>archive</span>
         </div>
       </header>
 
@@ -742,53 +804,74 @@ function App() {
             + Upload PYQ / Notes
           </button>
 
-          {/* FAQ SECTION */}
           <div className="faq-section">
             <h3 style={{ textAlign: 'center', marginBottom: '30px', color: '#1e293b', fontSize: '1.5rem', fontWeight: '800' }}>About NSUarchive</h3>
             <div className="faq-grid">
-              
               <div className="faq-card">
                 <h4>What is NSUarchive?</h4>
                 <p>NSUarchive is a centralized, student-driven digital library created to help NSU students easily find, access, and share academic resources like Previous Year Questions (PYQs) and study notes.</p>
               </div>
-              
               <div className="faq-card">
                 <h4>How does the upload process work?</h4>
                 <p>To ensure high quality, every document uploaded by a student goes through a strict verification process. Administrators review the files before they become publicly available on the portal.</p>
               </div>
-              
               <div className="faq-card">
                 <h4>Can't find what you're looking for?</h4>
                 <p>If we don't have the specific answer or document you need on the site, just ask the NSU AI Assistant! You can find the chat button right below to get instant help.</p>
               </div>
-
             </div>
           </div>
-          
-          {/* DEVELOPER FOOTER */}
           <div className="home-footer">
             Developed by Arsalaan, Sara and Ayesha
           </div>
         </main>
       )}
 
-      {/* USER PROFILE PAGE (INSTAGRAM STYLE) */}
-      {view === 'profile' && (
-        <main className="container" style={{maxWidth: isEditingProfile ? '650px' : '500px', margin: '0 auto', padding: '0', transition: 'max-width 0.3s ease'}}>
+      {/* NEW: SEARCH PAGE */}
+      {view === 'search' && (
+        <main className="container" style={{ flex: 1, maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+          <h2 className="portal-title" style={{textAlign: 'left', marginBottom: '20px'}}>Find Students</h2>
+          <form className="search-box" onSubmit={handleSearchUsers}>
+            <input 
+              type="text" 
+              placeholder="Search by name or username..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+            />
+            <button type="submit">Search</button>
+          </form>
+
+          <div className="search-results">
+            {searchResults.length > 0 ? searchResults.map(userItem => (
+              <div key={userItem.id} className="user-result-card" onClick={() => handleViewUser(userItem)}>
+                <div className="user-result-avatar">
+                  {userItem.avatarUrl ? <img src={userItem.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                </div>
+                <div className="user-result-info">
+                  <strong>{userItem.displayName || 'No Name'}</strong>
+                  <span>@{userItem.username || 'unknown'}</span>
+                </div>
+              </div>
+            )) : (
+              searchQuery && <p className="empty-state">No users found. Try a different name.</p>
+            )}
+          </div>
+        </main>
+      )}
+
+      {/* USER DASHBOARD (FULL PAGE PROFILE) */}
+      {view === 'dashboard' && (
+        <main className="container" style={{maxWidth: '100%', width: '100%', margin: '0 auto', padding: '0', flex: 1}}>
           <div className="ig-profile-container">
             
-            {/* Header: Username */}
             <div className="ig-header-bar">
               <span>{isEditingProfile ? 'Edit Profile' : `🔒 ${userProfile.username}`}</span>
-              <button style={{background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#000'}} onClick={() => {setView('home'); setIsEditingProfile(false); setAvatarFile(null); setAvatarPreview(null);}}>×</button>
+              {isEditingProfile && <button style={{background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#000'}} onClick={() => {setIsEditingProfile(false); setAvatarFile(null); setAvatarPreview(null);}}>×</button>}
             </div>
 
             {isEditingProfile ? (
-              /* EDIT PROFILE FORM */
-              <div style={{padding: '10px 25px'}}>
+              <div style={{padding: '10px 25px', maxWidth: '650px', margin: '0 auto'}}>
                 <form className="form-stack" onSubmit={handleSaveProfile}>
-                  
-                  {/* MUCH LARGER PROFILE PICTURE UPLOAD SECTION */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '25px' }}>
                     <div style={{ width: '140px', height: '140px', borderRadius: '50%', background: '#f8fafc', overflow: 'hidden', border: '3px solid #cbd5e1', marginBottom: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '4rem' }}>
                       {avatarPreview ? (
@@ -842,7 +925,6 @@ function App() {
                     <textarea style={{width: '100%', padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'none', height: '80px', color: '#000', backgroundColor: '#fff', fontSize: '0.95rem'}} placeholder="Tell us about yourself..." value={userProfile.bio || ''} onChange={(e) => setUserProfile({...userProfile, bio: e.target.value})} />
                   </div>
 
-                  {/* ALL NEW: SEPARATE EDUCATION BOXES */}
                   <div className="input-group">
                     <label>College Name</label>
                     <input type="text" placeholder="e.g. Nawab Shah Alam Khan University" value={userProfile.college || ''} onChange={(e) => setUserProfile({...userProfile, college: e.target.value})} />
@@ -867,8 +949,7 @@ function App() {
                 </form>
               </div>
             ) : (
-              /* MAIN PROFILE VIEW */
-              <>
+              <div style={{maxWidth: '800px', margin: '0 auto'}}>
                 <div className="ig-top-row">
                   <div className="ig-avatar">
                     {userProfile.avatarUrl ? <img src={userProfile.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
@@ -880,15 +961,12 @@ function App() {
 
                 <div className="ig-bio-section">
                   <div className="ig-bio-name">{userProfile.displayName || 'Add your name'}</div>
-                  
-                  {/* CLEAN DISPLAY OF ALL NEW EDUCATION FIELDS */}
                   <div className="ig-bio-dept">
                     {userProfile.college && <div style={{fontWeight: 'bold', color: '#0f172a', marginBottom: '2px'}}>{userProfile.college}</div>}
                     {userProfile.dept || userProfile.stream || userProfile.year ? (
                       `${userProfile.dept ? userProfile.dept : ''} ${userProfile.stream ? `• ${userProfile.stream}` : ''} ${userProfile.year ? `• ${userProfile.year}` : ''}`
                     ) : 'Add your education details'}
                   </div>
-
                   <div className="ig-bio-text">{userProfile.bio || 'Add a bio...'}</div>
                 </div>
 
@@ -915,8 +993,64 @@ function App() {
                 {getProfileFilteredUploads().length === 0 && (
                   <p style={{textAlign: 'center', color: '#94a3b8', padding: '30px 20px', fontStyle: 'italic'}}>No posts yet.</p>
                 )}
-              </>
+              </div>
             )}
+          </div>
+        </main>
+      )}
+
+      {/* NEW: VIEW OTHER USER PROFILE */}
+      {view === 'view_user_profile' && viewedUser && (
+        <main className="container" style={{maxWidth: '100%', width: '100%', margin: '0 auto', padding: '0', flex: 1}}>
+          <div className="ig-profile-container">
+            
+            <div className="ig-header-bar">
+              <button style={{background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#000'}} onClick={() => setView('search')}>← Back</button>
+              <span>{viewedUser.username}</span>
+              <div style={{width: '20px'}}></div> {/* Spacer */}
+            </div>
+
+            <div style={{maxWidth: '800px', margin: '0 auto'}}>
+              <div className="ig-top-row">
+                <div className="ig-avatar">
+                  {viewedUser.avatarUrl ? <img src={viewedUser.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                </div>
+                <div className="ig-stats">
+                  <div className="ig-stat-box"><strong>{viewedUserUploads.length}</strong><span>contributions</span></div>
+                </div>
+              </div>
+
+              <div className="ig-bio-section">
+                <div className="ig-bio-name">{viewedUser.displayName || 'No name provided'}</div>
+                <div className="ig-bio-dept">
+                  {viewedUser.college && <div style={{fontWeight: 'bold', color: '#0f172a', marginBottom: '2px'}}>{viewedUser.college}</div>}
+                  {viewedUser.dept || viewedUser.stream || viewedUser.year ? (
+                    `${viewedUser.dept ? viewedUser.dept : ''} ${viewedUser.stream ? `• ${viewedUser.stream}` : ''} ${viewedUser.year ? `• ${viewedUser.year}` : ''}`
+                  ) : ''}
+                </div>
+                <div className="ig-bio-text">{viewedUser.bio || ''}</div>
+              </div>
+
+              <div className="ig-tabs" style={{marginTop: '20px'}}>
+                {['All', 'PYQ', 'Notes', 'Imp Ques'].map(tab => (
+                  <div key={tab} className={`ig-tab ${profileTab === tab ? 'active' : ''}`} onClick={() => setProfileTab(tab)}>
+                    {tab}
+                  </div>
+                ))}
+              </div>
+
+              <div className="ig-grid">
+                {getProfileFilteredUploads(viewedUserUploads).map(d => (
+                  <div key={d.id} className="ig-grid-item" onClick={() => window.open(d.url)}>
+                    <div className="ig-grid-title">{d.title}</div>
+                    {d.docType && <div className={`ig-grid-type ${getDocTypeClass(d.docType)}`}>{d.docType}</div>}
+                  </div>
+                ))}
+              </div>
+              {getProfileFilteredUploads(viewedUserUploads).length === 0 && (
+                <p style={{textAlign: 'center', color: '#94a3b8', padding: '30px 20px', fontStyle: 'italic'}}>No public posts yet.</p>
+              )}
+            </div>
           </div>
         </main>
       )}
@@ -1140,7 +1274,7 @@ function App() {
         </main>
       )}
 
-      {/* ORIGINAL FLOATING AI ASSISTANT (FIXED OPEN/CLOSE) */}
+      {/* FIXED FLOATING AI ASSISTANT */}
       <div className="chat-wrapper">
         {isChatOpen && (
           <div className="chat-window">
@@ -1162,6 +1296,42 @@ function App() {
         <button className="chat-toggle-btn" onClick={() => setIsChatOpen(!isChatOpen)}>
           {isChatOpen ? 'Close AI ✖' : '✨ Ask AI'}
         </button>
+      </div>
+
+      {/* NEW: BOTTOM NAVIGATION BAR */}
+      <nav className="bottom-nav">
+        <button className={`bottom-nav-item ${(view === 'home' || view === 'courses_by_dept' || view === 'browse' || view === 'file_results') ? 'active' : ''}`} onClick={() => {setView('home'); setSelectedCat(''); setSelectedCourse(''); setBrowseStream(''); setYear(''); setSem('');}}>
+          <span className="bottom-nav-icon">🏠</span>
+          Home
+        </button>
+        
+        <button className={`bottom-nav-item ${view === 'search' || view === 'view_user_profile' ? 'active' : ''}`} onClick={() => setView('search')}>
+          <span className="bottom-nav-icon">🔍</span>
+          Search
+        </button>
+
+        <button className={`bottom-nav-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
+          <span className="bottom-nav-icon">👤</span>
+          Dashboard
+        </button>
+
+        <button className="bottom-nav-item" onClick={() => setIsSidebarOpen(true)}>
+          <span className="bottom-nav-icon">☰</span>
+          Settings
+        </button>
+      </nav>
+
+      {/* NEW: SETTINGS SIDEBAR (RIGHT SLIDE OUT) */}
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'show' : ''}`} onClick={() => setIsSidebarOpen(false)}></div>
+      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          Settings
+          <button onClick={() => setIsSidebarOpen(false)}>×</button>
+        </div>
+        <div className="sidebar-links">
+          <button onClick={() => { setView('admin_login'); setIsSidebarOpen(false); }}>🛡️ Admin Portal</button>
+          <button onClick={() => { handleLogout(); setIsSidebarOpen(false); }}>🚪 Logout</button>
+        </div>
       </div>
 
     </div>
