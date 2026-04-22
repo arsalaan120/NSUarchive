@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { db, auth } from './firebase'; 
-import { collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, setDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 
 // =========================================
@@ -224,6 +224,41 @@ const AppStyles = () => (
     }
 
     /* =========================================
+        INSTAGRAM STYLE PROFILE CSS
+       ========================================= */
+    .ig-profile-container { background: #fff; border-radius: 12px; padding: 10px 0; }
+    .ig-header-bar { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: space-between; padding: 0 15px 15px; border-bottom: 1px solid #e2e8f0; margin-bottom: 15px; color: #000;}
+    
+    .ig-top-row { display: flex; align-items: center; padding: 0 15px; gap: 25px; margin-bottom: 15px;}
+    .ig-avatar { width: 85px; height: 85px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; border: 2px solid #cbd5e1; flex-shrink: 0; overflow: hidden;}
+    .ig-stats { display: flex; gap: 25px; flex: 1; justify-content: space-around; }
+    .ig-stat-box { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ig-stat-box strong { font-size: 1.2rem; color: #0f172a; line-height: 1.2; }
+    .ig-stat-box span { font-size: 0.85rem; color: #0f172a; }
+
+    .ig-bio-section { padding: 0 15px; margin-bottom: 15px; }
+    .ig-bio-name { font-weight: bold; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px; }
+    .ig-bio-dept { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; line-height: 1.4;}
+    .ig-bio-text { font-size: 0.9rem; color: #0f172a; line-height: 1.4; white-space: pre-wrap; margin-top: 6px;}
+
+    .ig-actions { padding: 0 15px; margin-bottom: 20px; display: flex; gap: 10px; }
+    .ig-edit-btn { flex: 1; padding: 8px; background: #e2e8f0; color: #0f172a; border: none; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background 0.2s;}
+    .ig-edit-btn:hover { background: #cbd5e1; }
+
+    .ig-tabs { display: flex; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .ig-tab { flex: 1; text-align: center; padding: 12px 0; font-weight: 600; color: #94a3b8; cursor: pointer; font-size: 0.9rem; border-bottom: 2px solid transparent;}
+    .ig-tab.active { color: #0f172a; border-bottom: 2px solid #0f172a; }
+
+    .ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    .ig-grid-item { aspect-ratio: 1; background: #f8fafc; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; text-align: center; cursor: pointer; position: relative; }
+    .ig-grid-item:hover { background: #f1f5f9; }
+    .ig-grid-title { font-size: 0.75rem; font-weight: 600; color: #0f172a; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;}
+    .ig-grid-type { font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-top: 5px; }
+    .type-pyq { background: #e0e7ff; color: #4338ca; }
+    .type-notes { background: #dcfce3; color: #15803d; }
+    .type-imp { background: #fef3c7; color: #b45309; }
+
+    /* =========================================
         FIXED FLOATING AI CHAT CSS
        ========================================= */
     .chat-wrapper { position: fixed; bottom: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; }
@@ -257,6 +292,21 @@ function App() {
   // --- NEW: FORGOT PASSWORD STATES ---
   const [forgotStep, setForgotStep] = useState(0); 
   const [resetEmail, setResetEmail] = useState('');
+
+  // --- PROFILE STATES ---
+  const [myUploads, setMyUploads] = useState([]);
+  const [profileTab, setProfileTab] = useState('All'); 
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false); 
+  const [usernameError, setUsernameError] = useState('');
+  
+  // Avatar uploading states
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+
+  const [userProfile, setUserProfile] = useState({ 
+    username: '', displayName: '', bio: '', college: '', dept: '', stream: '', year: '', avatarUrl: '' 
+  });
 
   // --- FORM STATES ---
   const [dept, setDept] = useState('');
@@ -360,10 +410,39 @@ function App() {
     setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   };
 
+  const fetchUserProfile = async (currentUser) => {
+    const docRef = doc(db, "users", currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      setUserProfile({ college: '', year: '', avatarUrl: '', ...docSnap.data() }); 
+    } else {
+      const newProfile = { 
+        username: `student_${currentUser.uid.slice(0,5)}`, 
+        displayName: '', 
+        bio: '', 
+        college: '',
+        dept: '', 
+        stream: '',
+        year: '',
+        avatarUrl: ''
+      };
+      await setDoc(docRef, newProfile);
+      setUserProfile(newProfile);
+    }
+  };
+
+  const fetchMyUploads = async () => {
+    if (!user) return;
+    const q = query(collection(db, "materials"), where("uploaderId", "==", user.uid));
+    const snap = await getDocs(q);
+    setMyUploads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  };
+
   // --- USE-EFFECT ---
   useEffect(() => { 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if(currentUser) { fetchUserProfile(currentUser); }
     });
 
     if (view === 'browse') {
@@ -372,9 +451,60 @@ function App() {
     }
     
     if (view === 'admin') fetchPending();
+    if (view === 'profile') fetchMyUploads();
 
     return () => unsubscribe();
-  }, [selectedCat, selectedCourse, browseStream, year, sem, view]);
+  }, [selectedCat, selectedCourse, browseStream, year, sem, view, user]);
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setUsernameError('');
+    setSavingProfile(true);
+    
+    // Check if username is already taken by someone else
+    const q = query(collection(db, "users"), where("username", "==", userProfile.username));
+    const snap = await getDocs(q);
+    const isTaken = snap.docs.some(d => d.id !== user.uid);
+    
+    if (isTaken) {
+      setUsernameError("This username is already taken! Try another one.");
+      setSavingProfile(false);
+      return;
+    }
+
+    let finalAvatarUrl = userProfile.avatarUrl;
+
+    // UPLOAD NEW PROFILE PICTURE IF SELECTED
+    if (avatarFile) {
+      try {
+        const formData = new FormData();
+        formData.append("file", avatarFile);
+        formData.append("upload_preset", "ml_default"); // Uses your existing Cloudinary preset
+
+        const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/ddqotov4h/upload`, {
+          method: "POST", body: formData,
+        });
+        
+        const cloudData = await cloudinaryRes.json();
+        if (cloudData.secure_url) {
+          finalAvatarUrl = cloudData.secure_url;
+        }
+      } catch (err) {
+        console.error("Avatar upload failed", err);
+        alert("Failed to upload profile picture, but saving profile anyway.");
+      }
+    }
+    
+    const finalProfileToSave = { ...userProfile, avatarUrl: finalAvatarUrl };
+    
+    await setDoc(doc(db, "users", user.uid), finalProfileToSave);
+    
+    setUserProfile(finalProfileToSave);
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setIsEditingProfile(false);
+    setSavingProfile(false);
+  };
 
   // --- AUTHENTICATION HANDLERS ---
   const handleAuth = async (e) => {
@@ -441,7 +571,8 @@ function App() {
         title, dept, course, stream, year, sem, subject, docType,
         url: cloudData.secure_url,
         status: "pending", 
-        timestamp: new Date()
+        timestamp: new Date(),
+        uploaderId: user.uid
       });
 
       alert("File uploaded successfully! Awaiting Admin verification.");
@@ -562,6 +693,19 @@ function App() {
   const formatCourseName = (c) => c.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   const getFilteredDocs = () => fileResultsFilter === 'all' ? docs : docs.filter(d => d.docType === fileResultsFilter);
 
+  // Filter Profile Uploads based on Tab
+  const getProfileFilteredUploads = () => {
+    if(profileTab === 'All') return myUploads;
+    return myUploads.filter(d => d.docType === profileTab);
+  };
+
+  const getDocTypeClass = (type) => {
+    if(type === 'PYQ') return 'type-pyq';
+    if(type === 'Notes') return 'type-notes';
+    if(type === 'Imp Ques') return 'type-imp';
+    return '';
+  };
+
   // =========================================
   return (
     <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -570,6 +714,7 @@ function App() {
       <header className="main-header">
         <div className="logo" onClick={() => {setView('home'); setSelectedCat(''); setSelectedCourse(''); setBrowseStream(''); setYear(''); setSem('');}}>🎓 NSU<span>archive</span></div>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <button className="back-link" onClick={() => setView('profile')} style={{ border: 'none', background: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: 'bold' }}>👤 Profile</button>
           <button className="back-link" onClick={handleLogout} style={{ border: 'none', background: 'none', color: '#64748b', cursor: 'pointer' }}>Logout</button>
           <button className="btn-admin-nav" onClick={() => setView('admin_login')}>Admin Portal</button>
         </div>
@@ -623,6 +768,155 @@ function App() {
           {/* DEVELOPER FOOTER */}
           <div className="home-footer">
             Developed by Arsalaan, Sara and Ayesha
+          </div>
+        </main>
+      )}
+
+      {/* USER PROFILE PAGE (INSTAGRAM STYLE) */}
+      {view === 'profile' && (
+        <main className="container" style={{maxWidth: isEditingProfile ? '650px' : '500px', margin: '0 auto', padding: '0', transition: 'max-width 0.3s ease'}}>
+          <div className="ig-profile-container">
+            
+            {/* Header: Username */}
+            <div className="ig-header-bar">
+              <span>{isEditingProfile ? 'Edit Profile' : `🔒 ${userProfile.username}`}</span>
+              <button style={{background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#000'}} onClick={() => {setView('home'); setIsEditingProfile(false); setAvatarFile(null); setAvatarPreview(null);}}>×</button>
+            </div>
+
+            {isEditingProfile ? (
+              /* EDIT PROFILE FORM */
+              <div style={{padding: '10px 25px'}}>
+                <form className="form-stack" onSubmit={handleSaveProfile}>
+                  
+                  {/* MUCH LARGER PROFILE PICTURE UPLOAD SECTION */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '25px' }}>
+                    <div style={{ width: '140px', height: '140px', borderRadius: '50%', background: '#f8fafc', overflow: 'hidden', border: '3px solid #cbd5e1', marginBottom: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '4rem' }}>
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : userProfile.avatarUrl ? (
+                        <img src={userProfile.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        '👤'
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <label className="ig-edit-btn" style={{ cursor: 'pointer', textAlign: 'center', display: 'inline-block', padding: '8px 20px', margin: '0' }}>
+                        Change Picture
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setAvatarFile(file);
+                            setAvatarPreview(URL.createObjectURL(file));
+                          }
+                        }} />
+                      </label>
+                      {(avatarPreview || userProfile.avatarUrl) && (
+                        <button 
+                          type="button" 
+                          className="ig-edit-btn" 
+                          style={{ color: '#ef4444', padding: '8px 20px', margin: '0' }}
+                          onClick={() => {
+                            setAvatarFile(null);
+                            setAvatarPreview(null);
+                            setUserProfile({...userProfile, avatarUrl: ''});
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Username</label>
+                    <input type="text" placeholder="e.g. _arsalaan._0" required value={userProfile.username || ''} onChange={(e) => setUserProfile({...userProfile, username: e.target.value.toLowerCase().replace(/\s/g, '_')})} />
+                    {usernameError && <p style={{color: '#ef4444', fontSize: '0.8rem', margin: '-3px 0 10px'}}>{usernameError}</p>}
+                  </div>
+                  <div className="input-group">
+                    <label>Display Name</label>
+                    <input type="text" placeholder="Arsalaan" value={userProfile.displayName || ''} onChange={(e) => setUserProfile({...userProfile, displayName: e.target.value})} />
+                  </div>
+                  
+                  <div className="input-group">
+                    <label>Bio</label>
+                    <textarea style={{width: '100%', padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'none', height: '80px', color: '#000', backgroundColor: '#fff', fontSize: '0.95rem'}} placeholder="Tell us about yourself..." value={userProfile.bio || ''} onChange={(e) => setUserProfile({...userProfile, bio: e.target.value})} />
+                  </div>
+
+                  {/* ALL NEW: SEPARATE EDUCATION BOXES */}
+                  <div className="input-group">
+                    <label>College Name</label>
+                    <input type="text" placeholder="e.g. Nawab Shah Alam Khan University" value={userProfile.college || ''} onChange={(e) => setUserProfile({...userProfile, college: e.target.value})} />
+                  </div>
+                  <div className="input-group">
+                    <label>Department</label>
+                    <input type="text" placeholder="e.g. Computer Science" value={userProfile.dept || ''} onChange={(e) => setUserProfile({...userProfile, dept: e.target.value})} />
+                  </div>
+                  <div className="input-group">
+                    <label>Stream / Degree</label>
+                    <input type="text" placeholder="e.g. BTech" value={userProfile.stream || ''} onChange={(e) => setUserProfile({...userProfile, stream: e.target.value})} />
+                  </div>
+                  <div className="input-group">
+                    <label>Year</label>
+                    <input type="text" placeholder="e.g. 2nd Year" value={userProfile.year || ''} onChange={(e) => setUserProfile({...userProfile, year: e.target.value})} />
+                  </div>
+                  
+                  <button type="submit" className="btn-submit-large" style={{marginTop: '15px'}} disabled={savingProfile}>
+                    {savingProfile ? "Saving Profile..." : "Save Profile"}
+                  </button>
+                  <button type="button" className="ig-edit-btn" style={{marginTop: '10px', width: '100%'}} onClick={() => {setIsEditingProfile(false); setAvatarFile(null); setAvatarPreview(null); fetchUserProfile(user);}}>Cancel</button>
+                </form>
+              </div>
+            ) : (
+              /* MAIN PROFILE VIEW */
+              <>
+                <div className="ig-top-row">
+                  <div className="ig-avatar">
+                    {userProfile.avatarUrl ? <img src={userProfile.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                  </div>
+                  <div className="ig-stats">
+                    <div className="ig-stat-box"><strong>{myUploads.length}</strong><span>contributions</span></div>
+                  </div>
+                </div>
+
+                <div className="ig-bio-section">
+                  <div className="ig-bio-name">{userProfile.displayName || 'Add your name'}</div>
+                  
+                  {/* CLEAN DISPLAY OF ALL NEW EDUCATION FIELDS */}
+                  <div className="ig-bio-dept">
+                    {userProfile.college && <div style={{fontWeight: 'bold', color: '#0f172a', marginBottom: '2px'}}>{userProfile.college}</div>}
+                    {userProfile.dept || userProfile.stream || userProfile.year ? (
+                      `${userProfile.dept ? userProfile.dept : ''} ${userProfile.stream ? `• ${userProfile.stream}` : ''} ${userProfile.year ? `• ${userProfile.year}` : ''}`
+                    ) : 'Add your education details'}
+                  </div>
+
+                  <div className="ig-bio-text">{userProfile.bio || 'Add a bio...'}</div>
+                </div>
+
+                <div className="ig-actions">
+                  <button className="ig-edit-btn" onClick={() => setIsEditingProfile(true)}>Edit profile</button>
+                </div>
+
+                <div className="ig-tabs">
+                  {['All', 'PYQ', 'Notes', 'Imp Ques'].map(tab => (
+                    <div key={tab} className={`ig-tab ${profileTab === tab ? 'active' : ''}`} onClick={() => setProfileTab(tab)}>
+                      {tab}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="ig-grid">
+                  {getProfileFilteredUploads().map(d => (
+                    <div key={d.id} className="ig-grid-item" onClick={() => window.open(d.url)}>
+                      <div className="ig-grid-title">{d.title}</div>
+                      {d.docType && <div className={`ig-grid-type ${getDocTypeClass(d.docType)}`}>{d.docType}</div>}
+                    </div>
+                  ))}
+                </div>
+                {getProfileFilteredUploads().length === 0 && (
+                  <p style={{textAlign: 'center', color: '#94a3b8', padding: '30px 20px', fontStyle: 'italic'}}>No posts yet.</p>
+                )}
+              </>
+            )}
           </div>
         </main>
       )}
