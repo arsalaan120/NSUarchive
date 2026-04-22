@@ -622,7 +622,7 @@ function App() {
           
           {/* DEVELOPER FOOTER */}
           <div className="home-footer">
-            Developed by Arsalaan, Sara and Ayesha
+            Developed by Ibrahim, Sara and Ayesha
           </div>
         </main>
       )}
