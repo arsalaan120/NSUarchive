@@ -5,6 +5,70 @@ import { collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc } 
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 
 // =========================================
+// --- OFFLINE DOWNLOAD STORAGE (IndexedDB) ---
+// Saves file blobs inside the browser's own database.
+// Does NOT touch the phone's photo gallery or file system.
+// =========================================
+const DB_NAME = "nsuArchiveOfflineDB";
+const STORE_NAME = "downloads";
+
+const openOfflineDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (e) => {
+      const dbInstance = e.target.result;
+      if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+        dbInstance.createObjectStore(STORE_NAME, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+};
+
+const saveFileOffline = async (docItem, blob) => {
+  const dbInstance = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = dbInstance.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.put({
+      id: docItem.id,
+      title: docItem.title,
+      subject: docItem.subject || '',
+      docType: docItem.docType || '',
+      course: docItem.course || '',
+      stream: docItem.stream || '',
+      sem: docItem.sem || '',
+      blob,
+      savedAt: new Date().toISOString()
+    });
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = (e) => reject(e.target.error);
+  });
+};
+
+const getAllOfflineFiles = async () => {
+  const dbInstance = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = dbInstance.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+};
+
+const deleteOfflineFile = async (id) => {
+  const dbInstance = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = dbInstance.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).delete(id);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = (e) => reject(e.target.error);
+  });
+};
+
+// =========================================
 // --- DEMO-READY MODERN AESTHETIC CSS ---
 // =========================================
 const AppStyles = () => (
@@ -224,6 +288,80 @@ const AppStyles = () => (
     }
 
     /* =========================================
+        NEW: STAR RATING STYLES
+       ========================================= */
+    .star-row { display: flex; align-items: center; gap: 2px; margin-top: 6px; }
+    .star { font-size: 1.1rem; cursor: pointer; color: #d1d5db; transition: transform 0.1s, color 0.1s; line-height: 1; }
+    .star.filled { color: #f59e0b; }
+    .star:hover { transform: scale(1.2); }
+    .rating-count { font-size: 0.78rem; color: #64748b; margin-left: 6px; }
+    .rating-readonly { display: flex; align-items: center; gap: 2px; }
+    .rating-readonly .star { cursor: default; }
+    .rating-readonly .star:hover { transform: none; }
+
+    /* =========================================
+        NEW: DOWNLOAD / OFFLINE PAGE STYLES
+       ========================================= */
+    .btn-download { 
+      padding: 10px 16px; background: #10b981; color: white; border: none; 
+      border-radius: 8px; font-weight: 500; cursor: pointer; display: inline-flex; 
+      align-items: center; gap: 6px; font-size: 0.9rem;
+    }
+    .btn-download:hover { background: #059669; }
+    .btn-download:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-downloaded { background: #e2e8f0; color: #475569; }
+    .btn-downloaded:hover { background: #e2e8f0; }
+
+    .doc-actions-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .offline-doc-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px; background: #f8fafc; border-radius: 10px; margin-top: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .offline-doc-info p { color: #64748b; font-size: 0.85rem; margin: 4px 0 0 0; }
+    .btn-remove-offline {
+      padding: 8px 14px; background: #fee2e2; color: #b91c1c; border: none;
+      border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.85rem;
+    }
+    .btn-remove-offline:hover { background: #fecaca; }
+    .offline-badge {
+      background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.75rem; font-weight: 700; margin-left: 6px;
+    }
+
+    /* =========================================
+        HAMBURGER DROPDOWN MENU (Admin / Downloads / Logout)
+       ========================================= */
+    .menu-wrapper { position: relative; }
+    .btn-hamburger {
+      background: none; border: none; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: center;
+      gap: 5px; width: 32px; height: 32px; padding: 0;
+    }
+    .btn-hamburger span {
+      display: block; width: 100%; height: 2.5px;
+      background: #1e293b; border-radius: 2px;
+    }
+    .menu-overlay {
+      position: fixed; inset: 0; background: transparent; z-index: 998;
+    }
+    .dropdown-menu {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      display: flex; flex-direction: column;
+      min-width: 200px; overflow: hidden; z-index: 999;
+    }
+    .dropdown-item {
+      background: none; border: none; text-align: left;
+      padding: 14px 18px; font-size: 0.95rem; font-weight: 600;
+      color: #1e293b; cursor: pointer; border-bottom: 1px solid #f1f5f9;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: #f8fafc; }
+
+    /* =========================================
         FIXED FLOATING AI CHAT CSS
        ========================================= */
     .chat-wrapper { position: fixed; bottom: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; }
@@ -241,6 +379,36 @@ const AppStyles = () => (
     .chat-toggle-btn { padding: 12px 25px; border-radius: 50px; background: #3b82f6; color: white; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
   `}</style>
 );
+
+// =========================================
+// --- STAR RATING COMPONENT ---
+// =========================================
+const StarRating = ({ docItem, currentUserId, onRate }) => {
+  const ratingsMap = docItem.ratings || {};
+  const ratingValues = Object.values(ratingsMap);
+  const avgRating = ratingValues.length > 0
+    ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length)
+    : 0;
+  const myRating = currentUserId ? (ratingsMap[currentUserId] || 0) : 0;
+  const [hoverVal, setHoverVal] = useState(0);
+
+  return (
+    <div className="star-row" onClick={(e) => e.stopPropagation()}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`star ${star <= (hoverVal || myRating) ? 'filled' : ''}`}
+          onMouseEnter={() => setHoverVal(star)}
+          onMouseLeave={() => setHoverVal(0)}
+          onClick={() => onRate(docItem.id, star)}
+        >★</span>
+      ))}
+      <span className="rating-count">
+        {avgRating > 0 ? `${avgRating.toFixed(1)} (${ratingValues.length})` : 'No ratings yet'}
+      </span>
+    </div>
+  );
+};
 
 function App() {
   const [view, setView] = useState('home'); 
@@ -281,7 +449,13 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState([{ role: 'ai', text: 'Hi! I am the NSU Archive Assistant. How can I help you with your studies?' }]);
-  const API_KEY = "AIzaSyBEBDR5yQYp6sR0lLvXdbUaPtogLXaSmW4";
+  const API_KEY = "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";
+
+  // --- NEW: DOWNLOAD / OFFLINE STATES ---
+  const [downloadedIds, setDownloadedIds] = useState([]);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [offlineFiles, setOfflineFiles] = useState([]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // --- DATA STRUCTURES ---
   const departments = [
@@ -360,6 +534,17 @@ function App() {
     setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   };
 
+  // --- NEW: REFRESH THE LIST OF DOWNLOADED FILE IDs FROM INDEXEDDB ---
+  const refreshOfflineList = async () => {
+    try {
+      const files = await getAllOfflineFiles();
+      setOfflineFiles(files.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt)));
+      setDownloadedIds(files.map(f => f.id));
+    } catch (e) {
+      console.error("Failed to read offline storage", e);
+    }
+  };
+
   // --- USE-EFFECT ---
   useEffect(() => { 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -372,9 +557,15 @@ function App() {
     }
     
     if (view === 'admin') fetchPending();
+    if (view === 'downloads') refreshOfflineList();
 
     return () => unsubscribe();
   }, [selectedCat, selectedCourse, browseStream, year, sem, view]);
+
+  // --- LOAD DOWNLOADED IDS ONCE ON APP START (SO BUTTONS SHOW CORRECT STATE EVERYWHERE) ---
+  useEffect(() => {
+    refreshOfflineList();
+  }, []);
 
   // --- AUTHENTICATION HANDLERS ---
   const handleAuth = async (e) => {
@@ -441,7 +632,8 @@ function App() {
         title, dept, course, stream, year, sem, subject, docType,
         url: cloudData.secure_url,
         status: "pending", 
-        timestamp: new Date()
+        timestamp: new Date(),
+        ratings: {}
       });
 
       alert("File uploaded successfully! Awaiting Admin verification.");
@@ -470,6 +662,52 @@ function App() {
     fetchPending();
   };
 
+  // --- NEW: RATING LOGIC ---
+  const handleRateDoc = async (docId, stars) => {
+    if (!user) return alert("Please log in to rate this document.");
+    try {
+      const targetDoc = docs.find(d => d.id === docId);
+      const existingRatings = targetDoc?.ratings || {};
+      const updatedRatings = { ...existingRatings, [user.uid]: stars };
+
+      await updateDoc(doc(db, "materials", docId), { ratings: updatedRatings });
+
+      // Update local state immediately so the stars reflect the change without a refetch
+      setDocs(prevDocs => prevDocs.map(d => d.id === docId ? { ...d, ratings: updatedRatings } : d));
+    } catch (e) {
+      console.error("Failed to save rating", e);
+      alert("Could not save your rating. Please try again.");
+    }
+  };
+
+  // --- NEW: DOWNLOAD FOR OFFLINE LOGIC (SAVES INSIDE THE APP, NOT THE PHONE GALLERY) ---
+  const handleDownloadOffline = async (docItem) => {
+    if (downloadedIds.includes(docItem.id)) return; // already saved
+    setDownloadingId(docItem.id);
+    try {
+      const response = await fetch(docItem.url);
+      if (!response.ok) throw new Error("Could not fetch the file.");
+      const blob = await response.blob();
+      await saveFileOffline(docItem, blob);
+      setDownloadedIds(prev => [...prev, docItem.id]);
+      await refreshOfflineList();
+    } catch (e) {
+      console.error("Offline download failed", e);
+      alert("Could not save this file for offline use. Please check your connection and try again.");
+    }
+    setDownloadingId(null);
+  };
+
+  const handleOpenOfflineFile = (offlineDoc) => {
+    const blobUrl = URL.createObjectURL(offlineDoc.blob);
+    window.open(blobUrl, "_blank");
+  };
+
+  const handleRemoveOffline = async (id) => {
+    await deleteOfflineFile(id);
+    await refreshOfflineList();
+  };
+
   // --- AI CHAT LOGIC ---
   const handleAI = async (e) => {
     e.preventDefault();
@@ -478,20 +716,46 @@ function App() {
     setMessages(newMsgs);
     setChatInput('');
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: chatInput }] }] })
-      });
-      const data = await res.json();
+      const res = await fetch(
+  "https://api.groq.com/openai/v1/chat/completions",
+  {
+    method: "POST",
+    headers: {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${API_KEY}`,
+},
+    body: JSON.stringify({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "user",
+          content: chatInput
+        }
+      ]
+    })
+  }
+);
+
+const data = await res.json();
       
-      if (data.candidates && data.candidates.length > 0) {
-        setMessages([...newMsgs, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
-      } else if (res.status === 429) {
-        setMessages([...newMsgs, { role: 'ai', text: "I'm receiving too many requests right now. Please try again in a few minutes! 🙏" }]);
-      } else {
-        console.error("API Error from Google:", data);
-        setMessages([...newMsgs, { role: 'ai', text: "Sorry, I am currently unavailable. Please try again later." }]);
-      }
+    if (data.choices && data.choices.length > 0) {
+  setMessages([
+    ...newMsgs,
+    {
+      role: "ai",
+      text: data.choices[0].message.content
+    }
+  ]);
+} else {
+  console.error("API Error from Groq:", data);
+  setMessages([
+    ...newMsgs,
+    {
+      role: "ai",
+      text: "Sorry, I am currently unavailable."
+    }
+  ]);
+}
     } catch (e) { 
       console.error(e);
       setMessages([...newMsgs, { role: 'ai', text: "Network error occurred." }]);
@@ -569,9 +833,28 @@ function App() {
 
       <header className="main-header">
         <div className="logo" onClick={() => {setView('home'); setSelectedCat(''); setSelectedCourse(''); setBrowseStream(''); setYear(''); setSem('');}}>🎓 NSU<span>archive</span></div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <button className="back-link" onClick={handleLogout} style={{ border: 'none', background: 'none', color: '#64748b', cursor: 'pointer' }}>Logout</button>
-          <button className="btn-admin-nav" onClick={() => setView('admin_login')}>Admin Portal</button>
+        <div className="menu-wrapper">
+          <button className="btn-hamburger" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          {isMenuOpen && (
+            <>
+              <div className="menu-overlay" onClick={() => setIsMenuOpen(false)}></div>
+              <div className="dropdown-menu">
+                <button className="dropdown-item" onClick={() => { setView('admin_login'); setIsMenuOpen(false); }}>
+                  Admin Portal
+                </button>
+                <button className="dropdown-item" onClick={() => { setView('downloads'); setIsMenuOpen(false); }}>
+                  My Downloads {offlineFiles.length > 0 && `(${offlineFiles.length})`}
+                </button>
+                <button className="dropdown-item" onClick={() => { handleLogout(); setIsMenuOpen(false); }}>
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -726,20 +1009,69 @@ function App() {
             <h2 className="portal-title">{formatCourseName(selectedCourse)} - {browseStream} (Sem {sem})</h2>
             
             <div className="doc-list">
-              {getFilteredDocs().map(d => (
-                <div key={d.id} className="doc-row">
-                  <div className="doc-info">
-                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                      <strong>{d.title}</strong>
-                      {d.docType && <span className={`doc-tag ${d.docType.toLowerCase().replace(/\s/g, '')}`}>{d.docType}</span>}
+              {getFilteredDocs().map(d => {
+                const isDownloaded = downloadedIds.includes(d.id);
+                const isDownloadingThis = downloadingId === d.id;
+                return (
+                  <div key={d.id} className="doc-row" style={{flexDirection: 'column', alignItems: 'stretch', gap: '10px'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px'}}>
+                      <div className="doc-info">
+                        <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
+                          <strong>{d.title}</strong>
+                          {d.docType && <span className={`doc-tag ${d.docType.toLowerCase().replace(/\s/g, '')}`}>{d.docType}</span>}
+                          {isDownloaded && <span className="offline-badge">Saved offline</span>}
+                        </div>
+                        <p>{d.subject}</p>
+                        <StarRating docItem={d} currentUserId={user?.uid} onRate={handleRateDoc} />
+                      </div>
                     </div>
-                    <p>{d.subject}</p>
+                    <div className="doc-actions-row">
+                      <button className="btn-open" onClick={() => window.open(d.url)}>Open PDF</button>
+                      <button
+                        className={`btn-download ${isDownloaded ? 'btn-downloaded' : ''}`}
+                        disabled={isDownloadingThis || isDownloaded}
+                        onClick={() => handleDownloadOffline(d)}
+                      >
+                        {isDownloaded ? '✓ Downloaded' : isDownloadingThis ? 'Saving...' : '⬇️ Download'}
+                      </button>
+                    </div>
                   </div>
-                  <button className="btn-open" onClick={() => window.open(d.url)}>Open PDF</button>
-                </div>
-              ))}
+                );
+              })}
               {getFilteredDocs().length === 0 && <p className="empty-state">No verified files found for this selection.</p>}
             </div>
+          </div>
+        </main>
+      )}
+
+      {/* NEW: MY DOWNLOADS PAGE (OFFLINE, NO INTERNET NEEDED) */}
+      {view === 'downloads' && (
+        <main className="container">
+          <div className="portal-card">
+            <button className="back-link" onClick={() => setView('home')}>← Back</button>
+            <h2 className="portal-title">My Downloads</h2>
+            <p style={{textAlign: 'center', color: '#64748b', marginTop: '-5px', marginBottom: '15px', fontSize: '0.9rem'}}>
+              Saved on this device. Open these anytime, even without internet.
+            </p>
+            {offlineFiles.length === 0 ? (
+              <p className="empty-state">You haven't downloaded any files yet. Tap "Download" on any document to save it here.</p>
+            ) : (
+              offlineFiles.map(f => (
+                <div key={f.id} className="offline-doc-row">
+                  <div className="offline-doc-info">
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                      <strong style={{color: '#000'}}>{f.title}</strong>
+                      {f.docType && <span className={`doc-tag ${f.docType.toLowerCase().replace(/\s/g, '')}`}>{f.docType}</span>}
+                    </div>
+                    <p>{f.subject} {f.course ? `• ${formatCourseName(f.course)}` : ''} {f.sem ? `• Sem ${f.sem}` : ''}</p>
+                  </div>
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    <button className="btn-open" onClick={() => handleOpenOfflineFile(f)}>Open</button>
+                    <button className="btn-remove-offline" onClick={() => handleRemoveOffline(f.id)}>Remove</button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </main>
       )}
